@@ -48,13 +48,6 @@ export default function HealthHubNavbar() {
             <h1 className="text-2xl font-bold text-gray-800">HealthHub</h1>
           </div>
 
-          <div className="hidden md:flex flex-1 justify-center">
-            <div className="flex items-center space-x-8">
-              <span className="text-gray-400 text-sm">
-                Navigation links will go here
-              </span>
-            </div>
-          </div>
 
           {/* Right Side - Auth Buttons or User Menu */}
           <div className="flex items-center">

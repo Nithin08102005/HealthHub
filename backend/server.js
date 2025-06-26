@@ -6,6 +6,9 @@ import userRouter from './routes/userRoutes.js';
 import { authAdmin } from './middleware/authAdmin.js';
 import { authDoctor } from './middleware/authDoctor.js';
 import { authPatient } from './middleware/authPatient.js';
+import patientRouter from './routes/patientRoutes.js';
+import { createOrder } from './services/paymentService.js';
+import doctorRouter from './routes/doctorRoutes.js';
 dotenv.config();
 const app = express();
 
@@ -15,8 +18,10 @@ app.use(express.json());
 // testConnection();
 
 app.use('/admin',authAdmin, adminRouter);
+app.use('/doctor',doctorRouter);
 app.use('/user',userRouter);
-
+app.use("/patient",patientRouter);
+app.post("/payments/create-order",createOrder);
 app.get('/', (req, res) => {
   res.send('Hello, World!');
 });

@@ -5,7 +5,7 @@ function PatientLayout() {
   
   const navItems = [
     { path: '/patient', label: 'Dashboard', icon: '🏠' },
-    { path: '/patient/book-appointment', label: 'Book Appointment', icon: '📅' },
+    {path: '/patient/doctors', label: 'Doctors', icon: '👨‍⚕️' },
     { path: '/patient/appointments', label: 'My Appointments', icon: '📋' },
     { path: '/patient/profile', label: 'Profile', icon: '👤' }
   ];

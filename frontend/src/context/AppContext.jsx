@@ -8,12 +8,12 @@ export const appContext = createContext();
 const AppContextProvider = (props) => {
   const [token, setToken] = useState(() => {
     const storedToken = localStorage.getItem("token");
-
     return storedToken || "";
   });
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [userData, setUserData] = useState(false);
   const [role, setRole] = useState(false);
+
   const isTokenExpired = (token) => {
     if (!token) return true;
 

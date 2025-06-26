@@ -16,7 +16,7 @@ import axios from 'axios';
 import { appContext } from '../../context/AppContext';
 
 
-const ManageDoctors = () => {
+const AllDoctors = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSpecialization, setFilterSpecialization] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -54,16 +54,12 @@ const ManageDoctors = () => {
     const matchesSearch = doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSpecialization = filterSpecialization === '' || doctor.specialization === filterSpecialization;
-    const matchesStatus = filterStatus === '' || doctor.is_available=== filterStatus;
+    const matchesStatus = filterStatus === '' || doctor.is_available=== (filterStatus=== 'available');
     
     return matchesSearch && matchesSpecialization && matchesStatus;
   });
 
-  const handleDeleteDoctor = (id) => {
-    if (window.confirm('Are you sure you want to delete this doctor?')) {
-      setDoctors(doctors.filter(doctor => doctor.id !== id));
-    }
-  };
+  
 
   const navigateToAddDoctor = () => {
    navigate('/admin/add-doctor');
@@ -76,8 +72,8 @@ const ManageDoctors = () => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Manage Doctors</h1>
-              <p className="text-gray-600 mt-1">View and manage all registered doctors</p>
+              <h1 className="text-3xl font-bold text-gray-900">All Doctors</h1>
+              <p className="text-gray-600 mt-1">View  all registered doctors</p>
             </div>
             <button
               onClick={navigateToAddDoctor}
@@ -127,8 +123,8 @@ const ManageDoctors = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
               >
                 <option value="">All Status</option>
-                <option value="Available">Available</option>
-                <option value="Unavailable">Unavailable</option>
+                <option value="available">Available</option>
+                <option value="unavailable">Unavailable</option>
               </select>
             </div>
           </div>
@@ -257,7 +253,7 @@ const ManageDoctors = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end">
+                {/* <div className="flex justify-end">
                   <button
                     onClick={() => handleDeleteDoctor(doctor.id)}
                     className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
@@ -265,7 +261,7 @@ const ManageDoctors = () => {
                     <Trash2 className="w-4 h-4" />
                     Delete
                   </button>
-                </div>
+                </div> */}
               </div>
             </div>
           ))}
@@ -286,4 +282,4 @@ const ManageDoctors = () => {
   );
 };
 
-export default ManageDoctors;
+export default AllDoctors;

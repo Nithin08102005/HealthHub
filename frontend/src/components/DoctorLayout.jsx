@@ -8,8 +8,6 @@ function DoctorLayout() {
   const navItems = [
     { path: '/doctor', label: 'Dashboard', icon: '🏥' },
     { path: '/doctor/appointments', label: 'My Appointments', icon: '📅' },
-    { path: '/doctor/schedule', label: 'Schedule', icon: '🗓️' },
-    { path: '/doctor/earnings', label: 'Earnings', icon: '💰' },
     { path: '/doctor/profile', label: 'My Profile', icon: '👨‍⚕️' }
   ];
 

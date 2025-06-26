@@ -1,4 +1,4 @@
-function ManagePatients() {
+function AllPatients() {
     return (
         <div>
             Manage Patients Page
@@ -6,4 +6,4 @@ function ManagePatients() {
     )
 }
 
-export default ManagePatients
+export default AllPatients

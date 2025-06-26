@@ -397,12 +397,12 @@ const MyProfile = () => {
                       Consultation Fee
                     </div>
                   </div>
-                  <div className="text-center md:col-span-1 col-span-2">
+                  {/* <div className="text-center md:col-span-1 col-span-2">
                     <div className="text-2xl font-bold text-purple-600">
                       4.8★
                     </div>
                     <div className="text-sm text-gray-600">Patient Rating</div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* About Section Preview */}

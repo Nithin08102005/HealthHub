@@ -7,10 +7,8 @@ function AdminLayout() {
   const {userData} = useContext(appContext);
   const navItems = [
     { path: '/admin', label: 'Dashboard', icon: '🎛️' },
-    { path: '/admin/patients', label: 'Manage Patients', icon: '👥' },
-    { path: '/admin/doctors', label: 'Manage Doctors', icon: '👨‍⚕️' },
-    { path: '/admin/appointments', label: 'Manage Appointments', icon: '📋' },
-    { path: '/admin/analytics', label: 'Analytics', icon: '📊' },
+    { path: '/admin/doctors', label: 'All Doctors', icon: '👨‍⚕️' },
+    { path: '/admin/appointments', label: ' Appointments', icon: '📋' },
     { path: '/admin/add-doctor', label: 'Add Doctor', icon: '👨' }
   ];
 

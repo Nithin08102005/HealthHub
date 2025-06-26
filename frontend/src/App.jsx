@@ -15,6 +15,7 @@ import AdminRoutes from './routes/AdminRoutes.jsx';
 import PatientLayout from './components/PatientLayout.jsx';
 import DoctorLayout from './components/DoctorLayout.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
+import Footer from "./components/Footer.jsx"
 function App() {
 
   return (
@@ -58,6 +59,7 @@ function App() {
             <Route path="*" element={<AdminRoutes />} />
       </Route>
       </Routes>
+      <Footer/>
     </div>
   )
 }
