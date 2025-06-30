@@ -23,7 +23,7 @@ const MyAppointments = () => {
     async function getAppointments() {
       try {
         setLoading(true);
-        const { data } = await axios.post("http://localhost:3000/patient/getAppointments", {
+        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/patient/getAppointments`, {
           patientId: userData.id
         });
         
@@ -82,7 +82,7 @@ const MyAppointments = () => {
  const handlePayment = async (appointmentId, consultancyFee) => {
   try {
     // Step 1: Create order on backend
-    const { data } = await axios.post("http://localhost:3000/payments/create-order", {
+    const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/payments/create-order`, {
       amount: consultancyFee
     });
 
@@ -102,7 +102,7 @@ const MyAppointments = () => {
       handler: async function () {
         // ⚠️ No signature verification — directly call makePayment
         try {
-         const response= await axios.post("http://localhost:3000/patient/makepayment", {
+         const response= await axios.post(`${import.meta.env.VITE_API_URL}/patient/makepayment`, {
             appointmentId,
             consultancyFee
           });
@@ -157,7 +157,7 @@ setAppointmentData({
 
     try {
       setCancelLoading(true);
-      const response = await axios.put("http://localhost:3000/patient/cancelAppointment", {
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/patient/cancelAppointment`, {
         appointmentId: appointment.id
       });
       

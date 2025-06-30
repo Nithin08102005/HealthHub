@@ -29,7 +29,7 @@ const AllDoctors = () => {
    
     async function getDoctors() {
       try {
-        const response = await axios.get("http://localhost:3000/admin/doctors", {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/doctors`, {
           headers: { token },
         });
 

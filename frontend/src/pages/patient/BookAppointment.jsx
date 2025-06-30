@@ -36,7 +36,7 @@ const BookAppointment = () => {
       try {
         setLoading(true);
         const response = await axios.post(
-          "http://localhost:3000/patient/getDoctorById",
+          `${import.meta.env.VITE_API_URL}/patient/getDoctorById`,
           { doctorId },
           {
             headers: {
@@ -115,7 +115,7 @@ const BookAppointment = () => {
 
       try {
         const response = await axios.post(
-          "http://localhost:3000/patient/getBookedSlots",
+          `${import.meta.env.VITE_API_URL}/patient/getBookedSlots`,
           {
             doctorId,
             date: dateStr,
@@ -166,7 +166,7 @@ const BookAppointment = () => {
     setBookingAppointment(true);
     try {
       const response = await axios.post(
-        "http://localhost:3000/patient/bookAppointment",
+        `${import.meta.env.VITE_API_URL}/patient/bookAppointment`,
         { doctorId, patientId: userData.id, selectedSlot, reasonForVisit },
         {
           headers: {

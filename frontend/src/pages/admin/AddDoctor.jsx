@@ -186,7 +186,7 @@ if (doctorData.password.length < 6) {
       formData.append("role", "doctor");
 
       // Replace with your actual API endpoint
-      const response = await axios.post("http://localhost:3000/user/register", formData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/user/register`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           token

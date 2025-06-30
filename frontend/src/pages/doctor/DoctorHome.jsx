@@ -27,7 +27,7 @@ const DoctorHome = () => {
     const fetchDoctorStats = async () => {
       try {
         setLoading(true);
-        const response = await axios.post('http://localhost:3000/doctor/getDoctorDashboardStats', {
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/getDoctorDashboardStats`, {
           doctorId:userData.id,
         });
         if (response.data.success) {

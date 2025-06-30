@@ -15,7 +15,7 @@ const AdminHome = () => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:3000/admin/getDashboardStats',
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/getDashboardStats`,
           {
             headers: { token }
           }

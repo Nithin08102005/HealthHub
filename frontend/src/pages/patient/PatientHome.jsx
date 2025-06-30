@@ -15,10 +15,11 @@ import {
 import axios from "axios";
 import { useContext } from "react";
 import { appContext } from "../../context/AppContext";
-
+import { useNavigate } from "react-router-dom";
 const PatientDashboard = () => {
   const [visibleSections, setVisibleSections] = useState(new Set());
   const [waveAnimation, setWaveAnimation] = useState(true);
+  const navigate=useNavigate();
   const { userData } = useContext(appContext);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +28,7 @@ const PatientDashboard = () => {
       setLoading(true);
       try {
         const response = await axios.post(
-          "http://localhost:3000/patient/getPatientDashboardStats",
+          `${import.meta.env.VITE_API_URL}/patient/getPatientDashboardStats`,
           {
             patientId: userData?.id,
           }
@@ -318,7 +319,8 @@ const PatientDashboard = () => {
               appointments
             </p>
             <div className="flex justify-center">
-              <button className="bg-purple-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-purple-700 transition-colors duration-300 transform hover:scale-105">
+              <button className="bg-purple-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-purple-700 transition-colors duration-300 transform hover:scale-105"
+               onClick={()=>navigate("/patient/appointments")}>
                 Manage Appointments
               </button>
             </div>

@@ -141,7 +141,7 @@ const MyProfile = () => {
       });
 
         const response = await axios.post(
-        "http://localhost:3000/user/updateUserDetails",
+        `${import.meta.env.VITE_API_URL}/user/updateUserDetails`,
         formData,
         {
           headers: {

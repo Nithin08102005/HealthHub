@@ -121,7 +121,7 @@ const DoctorAppointments = () => {
     const fetchAppointments = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.post('http://localhost:3000/doctor/getAppointments',
+        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/getAppointments`,
           {
             doctorId: doctorData.id
           }
@@ -163,7 +163,7 @@ const DoctorAppointments = () => {
     try {
       setActionLoading(true);
       
-      const {data} = await axios.post("http://localhost:3000/doctor/confirmAppointment", {
+      const {data} = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/confirmAppointment`, {
         id: appointmentId
       })
       if (data.success) {
@@ -200,7 +200,7 @@ const DoctorAppointments = () => {
     try {
       if (!isAutoComplete) setActionLoading(true);
       
-      const {data} = await axios.post("http://localhost:3000/doctor/completeAppointment", {
+      const {data} = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/completeAppointment`, {
         id: appointmentId
       });
       
@@ -244,7 +244,7 @@ const DoctorAppointments = () => {
     try {
       setActionLoading(true);
       
-      const {data} = await axios.post("http://localhost:3000/doctor/cancelAppointment",
+      const {data} = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/cancelAppointment`,
         {
           id: appointment.id
         }

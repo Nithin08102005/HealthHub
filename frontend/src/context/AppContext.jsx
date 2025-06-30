@@ -28,7 +28,7 @@ const AppContextProvider = (props) => {
   const loadUserData = async () => {
     try {
       const { data } = await axios.get(
-        "http://localhost:3000/user/getUserDetails",
+        `${import.meta.env.VITE_API_URL}/user/getUserDetails`,
         {
           headers: { token },
         }
