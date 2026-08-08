@@ -5,6 +5,7 @@ import "dotenv/config";
 import jwt from "jsonwebtoken";
 import ImageKit from "imagekit";
 import fs from "fs";
+import { sendResetOTPEmail } from "../services/mailService.js";
 async function userRegister(req, res) {
   try {
     const { name, email, password, role, gender, phone } = req.body;
@@ -351,4 +352,75 @@ async function userUpdate(req, res) {
   }
 }
 
-export { userRegister, userLogin, getUserDetails, userUpdate };
+async function forgotPassword(req, res) {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.json({ success: false, message: "Email is required" });
+    }
+
+    const user = await sql`SELECT * FROM users WHERE email = ${email}`;
+    if (user.length === 0) {
+      return res.json({ success: false, message: "User not found with this email" });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Create a temporary JWT reset token containing email and otp, expiring in 10 minutes
+    const resetToken = jwt.sign(
+      { email, otp },
+      process.env.JWT_SECRET,
+      { expiresIn: "10m" }
+    );
+
+    // Send email
+    await sendResetOTPEmail(email, user[0].name, otp);
+
+    res.json({ success: true, message: "OTP sent to your email", resetToken });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+async function resetPassword(req, res) {
+  try {
+    const { otp, newPassword, resetToken } = req.body;
+
+    if (!otp || !newPassword || !resetToken) {
+      return res.json({ success: false, message: "Missing reset details" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.json({ success: false, message: "Password must be at least 6 characters long" });
+    }
+
+    // Decode token
+    let decoded;
+    try {
+      decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.json({ success: false, message: "Reset token expired or invalid" });
+    }
+
+    if (decoded.otp !== otp) {
+      return res.json({ success: false, message: "Invalid OTP code" });
+    }
+
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update in users table
+    await sql`UPDATE users SET password = ${hashedPassword} WHERE email = ${decoded.email}`;
+
+    res.json({ success: true, message: "Password reset successful! You can now log in." });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+export { userRegister, userLogin, getUserDetails, userUpdate, forgotPassword, resetPassword };
+

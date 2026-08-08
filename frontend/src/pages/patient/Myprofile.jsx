@@ -11,14 +11,17 @@ import {
   Calendar,
   Users,
   Image,
-  Loader,
+  Loader2,
+  Sparkles,
+  ShieldCheck,
+  CheckCircle2,
+  Upload
 } from "lucide-react";
 import { appContext } from "../../context/AppContext";
 import axios from "axios";
 import toast from "react-hot-toast";
 
 const MyProfile = () => {
-  // Sample patient data - replace with actual data from your backend
   const { userData, token, setUserData } = useContext(appContext);
 
   const [patientData, setPatientData] = useState({
@@ -54,7 +57,6 @@ const MyProfile = () => {
   const fileInputRef = useRef(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Update editData when patientData changes
   useEffect(() => {
     setEditData({ ...patientData });
   }, [patientData]);
@@ -82,45 +84,17 @@ const MyProfile = () => {
     handleImageSelect(file);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    handleImageSelect(file);
-  };
-
-  const removeImage = () => {
-    setImagePreview(null);
-    setSelectedImageFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
   const handleSave = async () => {
     setIsSaving(true);
     try {
       const formData = new FormData();
 
-      // Append image if selected
       if (selectedImageFile) {
-        formData.append("file", selectedImageFile); // 'file' matches your upload.single('file')
+        formData.append("file", selectedImageFile);
       }
 
-      // Append other user details
       Object.entries(editData).forEach(([key, value]) => {
         if (key !== "profileImage") {
-          // Exclude image since it's separately handled
           formData.append(key, value);
         }
       });
@@ -143,7 +117,8 @@ const MyProfile = () => {
             ...prev,
             profileImage: response.data.data.imageUrl,
           }));
-          setUserData(() => ({
+          setUserData((prev) => ({
+            ...prev,
             ...editData,
             image: response.data.data.imageUrl,
           }));
@@ -154,13 +129,11 @@ const MyProfile = () => {
           }));
         }
 
-        // Reset editing state
         setIsEditing(false);
         setImagePreview(null);
         setSelectedImageFile(null);
 
         toast.success("Profile updated successfully!");
-        // console.log("Updated patient data:", response.data.data);
       } else {
         throw new Error(response.data.message || "Update failed");
       }
@@ -186,6 +159,7 @@ const MyProfile = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "Not Provided";
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -194,182 +168,143 @@ const MyProfile = () => {
   };
 
   const calculateAge = (date_of_birth) => {
+    if (!date_of_birth) return null;
     const today = new Date();
     const birthDate = new Date(date_of_birth);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
     return age;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <User className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    Patient Profile
-                  </h1>
-                  <p className="text-gray-600">
-                    Manage your personal information
-                  </p>
-                </div>
-              </div>
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>Edit Profile</span>
-                </button>
-              ) : (
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className={`flex items-center space-x-2 px-4 py-2 ${
-                      isSaving
-                        ? "bg-green-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
-                    } text-white rounded-lg transition-colors`}
-                  >
-                    {isSaving ? (
-                      <Loader className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    <span>{isSaving ? "Saving..." : "Save"}</span>
-                  </button>
+    <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl my-2 p-6 sm:p-10">
+      {/* Background Mesh Gradients */}
+      <div className="absolute top-0 right-10 w-96 h-96 bg-blue-500/15 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-10 left-10 w-96 h-96 bg-indigo-500/15 rounded-full blur-[120px] pointer-events-none"></div>
 
-                  <button
-                    onClick={handleCancel}
-                    disabled={isSaving}
-                    className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                    <span>Cancel</span>
-                  </button>
-                </div>
-              )}
+      <div className="max-w-4xl mx-auto relative z-10">
+
+        {/* Page Title */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Personal Account Center</span>
             </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              My Patient Profile
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">
+              Keep your contact information and personal details updated for seamless consultations.
+            </p>
+          </div>
+
+          <div>
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold px-5 py-2.5 rounded-2xl shadow-lg shadow-blue-500/25 transition-all flex items-center gap-2 text-sm cursor-pointer"
+              >
+                <Edit2 className="w-4 h-4" />
+                <span>Edit Profile</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 rounded-2xl transition-all text-sm flex items-center gap-1.5 border border-white/10 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Cancel</span>
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-5 py-2.5 rounded-2xl shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-2 text-sm cursor-pointer"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Profile Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-6">
-            {/* Profile Image Section */}
-            <div className="flex flex-col items-center mb-8">
-              <div className="relative">
-                {isEditing && !imagePreview ? (
-                  // Drag and drop area for editing
-                  <div
-                    className={`w-32 h-32 rounded-full border-4 border-dashed flex items-center justify-center cursor-pointer transition-all ${
-                      isDragging
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 bg-gray-50 hover:border-gray-400"
-                    }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <div className="text-center">
-                      <Image
-                        className={`w-8 h-8 mx-auto mb-1 ${
-                          isDragging ? "text-blue-500" : "text-gray-400"
-                        }`}
-                      />
-                      <p className="text-xs text-gray-500">
-                        {isDragging ? "Drop here" : "Click or drag"}
-                      </p>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </div>
-                ) : (
-                  // Regular image display
-                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
-                    <img
-                      src={imagePreview || patientData.profileImage}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
+        {/* Profile Card Container */}
+        <div className="bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/15 p-8 sm:p-10 space-y-10">
 
-                {isEditing && imagePreview && (
-                  <button
-                    onClick={removeImage}
-                    className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
+          {/* Avatar Banner Header */}
+          <div className="flex flex-col sm:flex-row items-center gap-8 pb-8 border-b border-white/10">
+            <div className="relative group">
+              <img
+                src={imagePreview || patientData.profileImage}
+                alt={patientData.name || "Patient Avatar"}
+                className="w-32 h-32 rounded-3xl object-cover shadow-2xl border-4 border-slate-950 bg-slate-950"
+              />
 
-                {isEditing && imagePreview && (
-                  <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
-                    <Camera className="w-4 h-4" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              <h2 className="text-2xl font-bold text-gray-900 mt-4">
-                {isEditing ? editData.name : patientData.name}
-              </h2>
-              {(isEditing
-                ? editData.date_of_birth
-                : patientData.date_of_birth) && (
-                <p className="text-gray-600">
-                  Age:{" "}
-                  {calculateAge(
-                    isEditing
-                      ? editData.date_of_birth
-                      : patientData.date_of_birth
-                  )}{" "}
-                  years
-                </p>
-              )}
-
-              {isEditing && selectedImageFile && (
-                <div className="mt-2 text-center">
-                  <p className="text-sm text-gray-500">
-                    {(selectedImageFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
+              {isEditing && (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute inset-0 bg-slate-950/80 rounded-3xl flex flex-col items-center justify-center text-cyan-300 cursor-pointer opacity-90 hover:opacity-100 transition-opacity"
+                >
+                  <Camera className="w-7 h-7 mb-1" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Change Photo</span>
                 </div>
               )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
             </div>
 
-            {/* Patient Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Name */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <User className="w-4 h-4 mr-2 text-gray-500" />
+            <div className="text-center sm:text-left space-y-2">
+              <div className="inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-300 px-3 py-1 rounded-full text-xs font-bold border border-emerald-500/30">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Verified Patient Account</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+                {patientData.name || "Unnamed Patient"}
+              </h2>
+              <p className="text-slate-400 text-sm">
+                {patientData.email || "No email registered"}
+              </p>
+              {patientData.date_of_birth && (
+                <p className="text-xs text-slate-400 font-medium">
+                  Age: {calculateAge(patientData.date_of_birth)} years old
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Form Fields Section */}
+          <div className="space-y-8">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <User className="w-5 h-5 text-cyan-400" />
+              <span>Personal Information</span>
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Full Name
                 </label>
                 {isEditing ? (
@@ -377,142 +312,114 @@ const MyProfile = () => {
                     type="text"
                     value={editData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your full name"
+                    className="w-full p-3.5 bg-slate-950/80 border border-white/15 rounded-2xl text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-400"
                   />
                 ) : (
-                  <p className="text-gray-900 px-3 py-2 bg-gray-50 rounded-lg">
-                    {patientData.name}
+                  <p className="p-3.5 bg-slate-950/60 rounded-2xl text-white text-sm font-semibold border border-white/10">
+                    {patientData.name || "Not Provided"}
                   </p>
                 )}
               </div>
 
-              {/* Email */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <Mail className="w-4 h-4 mr-2 text-gray-500" />
+              {/* Email Address */}
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Email Address
                 </label>
-                <div className="relative">
-                  <p className="text-gray-900 px-3 py-2 bg-gray-100 rounded-lg">
-                    {patientData.email}
-                  </p>
-                  {isEditing && (
-                    <span className="absolute right-3 top-2 text-xs text-gray-500">
-                      Not editable
-                    </span>
-                  )}
-                </div>
+                <p className="p-3.5 bg-slate-950/40 rounded-2xl text-slate-400 text-sm font-semibold border border-white/5 cursor-not-allowed">
+                  {patientData.email || "Not Provided"} (Account Email)
+                </p>
               </div>
 
-              {/* Phone */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <Phone className="w-4 h-4 mr-2 text-gray-500" />
+              {/* Phone Number */}
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Phone Number
                 </label>
                 {isEditing ? (
                   <input
-                    type="tel"
+                    type="text"
                     value={editData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter your phone number"
+                    placeholder="+91 98765 43210"
+                    className="w-full p-3.5 bg-slate-950/80 border border-white/15 rounded-2xl text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-400"
                   />
                 ) : (
-                  <p className="text-gray-900 px-3 py-2 bg-gray-50 rounded-lg">
-                    {patientData.phone}
+                  <p className="p-3.5 bg-slate-950/60 rounded-2xl text-white text-sm font-semibold border border-white/10 flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-cyan-400" />
+                    <span>{patientData.phone || "Not Provided"}</span>
                   </p>
                 )}
               </div>
 
               {/* Gender */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <Users className="w-4 h-4 mr-2 text-gray-500" />
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Gender
                 </label>
                 {isEditing ? (
                   <select
                     value={editData.gender}
-                    onChange={(e) =>
-                      handleInputChange("gender", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => handleInputChange("gender", e.target.value)}
+                    className="w-full p-3.5 bg-slate-950/80 border border-white/15 rounded-2xl text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-400"
                   >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="" className="bg-slate-900 text-white">Select Gender</option>
+                    <option value="Male" className="bg-slate-900 text-white">Male</option>
+                    <option value="Female" className="bg-slate-900 text-white">Female</option>
+                    <option value="Other" className="bg-slate-900 text-white">Other</option>
                   </select>
                 ) : (
-                  <p className="text-gray-900 px-3 py-2 bg-gray-50 rounded-lg">
-                    {patientData.gender}
+                  <p className="p-3.5 bg-slate-950/60 rounded-2xl text-white text-sm font-semibold border border-white/10">
+                    {patientData.gender || "Not Specified"}
                   </p>
                 )}
               </div>
 
               {/* Date of Birth */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Date of Birth
                 </label>
                 {isEditing ? (
                   <input
                     type="date"
                     value={editData.date_of_birth}
-                    onChange={(e) =>
-                      handleInputChange("date_of_birth", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
+                    className="w-full p-3.5 bg-slate-950/80 border border-white/15 rounded-2xl text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-400"
                   />
                 ) : (
-                  <p className="text-gray-900 px-3 py-2 bg-gray-50 rounded-lg">
-                    {patientData.date_of_birth
-                      ? formatDate(patientData.date_of_birth)
-                      : "Date Not Available"}
+                  <p className="p-3.5 bg-slate-950/60 rounded-2xl text-white text-sm font-semibold border border-white/10 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-cyan-400" />
+                    <span>{formatDate(patientData.date_of_birth)}</span>
                   </p>
                 )}
               </div>
 
-              {/* Address */}
-              <div className="space-y-2 md:col-span-2">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <MapPin className="w-4 h-4 mr-2 text-gray-500" />
-                  Address
+              {/* Residential Address */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Residential Address
                 </label>
                 {isEditing ? (
                   <textarea
                     value={editData.address}
-                    onChange={(e) =>
-                      handleInputChange("address", e.target.value)
-                    }
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Enter your address"
+                    onChange={(e) => handleInputChange("address", e.target.value)}
+                    placeholder="Enter street, city, state, and pin code..."
+                    className="w-full p-3.5 bg-slate-950/80 border border-white/15 rounded-2xl text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-400 h-24 resize-none"
                   />
                 ) : (
-                  <p className="text-gray-900 px-3 py-2 bg-gray-50 rounded-lg">
-                    {patientData.address}
+                  <p className="p-3.5 bg-slate-950/60 rounded-2xl text-white text-sm font-semibold border border-white/10 flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                    <span>{patientData.address || "No address on record"}</span>
                   </p>
                 )}
               </div>
-            </div>
 
-            {/* Additional Info */}
-            <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="text-sm font-medium text-blue-800 mb-2">
-                Profile Information
-              </h3>
-              <p className="text-sm text-blue-700">
-                Keep your profile information up to date to ensure we can
-                contact you and provide the best care possible.
-                {isEditing &&
-                  " You can drag and drop an image on the profile picture area or click to browse."}
-              </p>
             </div>
           </div>
+
         </div>
+
       </div>
     </div>
   );

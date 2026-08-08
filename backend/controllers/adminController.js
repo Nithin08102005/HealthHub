@@ -1,30 +1,29 @@
-import {sql} from '../config/db.js';
-async function getPatients(req,res) {
-    try{
-  const result = await sql`SELECT * FROM patients`;
-  res.json({ success: true, data: result });
-    }
-    catch(error)
-    {
-          console.log(error)
-        res.json({ success: false, message: error.message })
-    }
-}
-async function getDoctors(req,res) {
-    try{
-  const result = await sql`SELECT * FROM doctors`;
-  res.json({ success: true, data: result });
-    }
-    catch(error)
-    {
-          console.log(error)
-        res.json({ success: false, message: error.message })
-    }
-}
+import { sql } from '../config/db.js';
+import { syncAppointmentStatuses } from '../services/appointmentService.js';
 
-
- async function getAppointments(req, res) {
+async function getPatients(req, res) {
   try {
+    const result = await sql`SELECT * FROM patients`;
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+async function getDoctors(req, res) {
+  try {
+    const result = await sql`SELECT * FROM doctors`;
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+async function getAppointments(req, res) {
+  try {
+    await syncAppointmentStatuses();
     const result = await sql`
       SELECT 
         a.id,
@@ -44,7 +43,7 @@ async function getDoctors(req,res) {
       FROM appointments a
       JOIN patients p ON a.patient_id = p.id
       JOIN doctors d ON a.doctor_id = d.id
-      ORDER BY a.appointment_date DESC,a.appointment_time DESC;
+      ORDER BY a.appointment_date DESC, a.appointment_time DESC;
     `;
 
     const appointments = result.map(row => {
@@ -88,6 +87,7 @@ function calculateAge(dob) {
 }
 
 function formatTime(sqlTime) {
+  if (!sqlTime) return '';
   const [hourStr, minute] = sqlTime.split(':');
   let hour = parseInt(hourStr);
   const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -95,9 +95,9 @@ function formatTime(sqlTime) {
   return `${hour}:${minute} ${ampm}`;
 }
 
-
-  async function getDashboardStats(req, res) {
+async function getDashboardStats(req, res) {
   try {
+    await syncAppointmentStatuses();
     const totalDoctors = await sql`SELECT COUNT(*) AS count FROM doctors`;
     const totalPatients = await sql`SELECT COUNT(*) AS count FROM patients`;
     const totalAppointments = await sql`SELECT COUNT(*) AS count FROM appointments`;
@@ -106,23 +106,22 @@ function formatTime(sqlTime) {
     const confirmed = await sql`SELECT COUNT(*) AS count FROM appointments WHERE status = 'confirmed'`;
     const completed = await sql`SELECT COUNT(*) AS count FROM appointments WHERE status = 'completed'`;
     const cancelled = await sql`SELECT COUNT(*) AS count FROM appointments WHERE status = 'cancelled'`;
-const paidCount = await sql`SELECT COUNT(*) AS count FROM appointments WHERE payment_status = true`; 
-const unpaidCount = await sql`SELECT COUNT(*) AS count FROM appointments WHERE payment_status = false`;
-const paid = await sql`
-  SELECT SUM(d.consultation_fee) AS amount
-  FROM appointments a
-  JOIN doctors d ON a.doctor_id = d.id
-  WHERE a.status IN ('confirmed', 'completed') AND a.payment_status = true;
-`;
+    const expired = await sql`SELECT COUNT(*) AS count FROM appointments WHERE status = 'expired'`;
+    const paidCount = await sql`SELECT COUNT(*) AS count FROM appointments WHERE payment_status = true`; 
+    const unpaidCount = await sql`SELECT COUNT(*) AS count FROM appointments WHERE payment_status = false`;
+    const paid = await sql`
+      SELECT SUM(d.consultation_fee) AS amount
+      FROM appointments a
+      JOIN doctors d ON a.doctor_id = d.id
+      WHERE a.status IN ('confirmed', 'completed') AND a.payment_status = true;
+    `;
 
-const unpaid = await sql`
-  SELECT SUM(d.consultation_fee) AS amount
-  FROM appointments a
-  JOIN doctors d ON a.doctor_id = d.id
-  WHERE a.status IN ('confirmed', 'completed') AND a.payment_status = false;
-`;
-
-
+    const unpaid = await sql`
+      SELECT SUM(d.consultation_fee) AS amount
+      FROM appointments a
+      JOIN doctors d ON a.doctor_id = d.id
+      WHERE a.status IN ('confirmed', 'completed') AND a.payment_status = false;
+    `;
 
     res.json({
       success: true,
@@ -133,13 +132,14 @@ const unpaid = await sql`
         pending: pending[0].count,
         confirmed: confirmed[0].count,
         completed: completed[0].count,
-        cancelled: cancelled[0].count
+        cancelled: cancelled[0].count,
+        expired: expired[0].count,
       },
       paymentStats: {
         paid: paid[0].amount,
         unpaid: unpaid[0].amount,
-        paidCount:paidCount[0].count,
-        unpaidCount:unpaidCount[0].count
+        paidCount: paidCount[0].count,
+        unpaidCount: unpaidCount[0].count
       }
     });
   } catch (error) {
@@ -148,5 +148,4 @@ const unpaid = await sql`
   }
 }
 
-
-export { getPatients,getDoctors,getAppointments,getDashboardStats };
+export { getPatients, getDoctors, getAppointments, getDashboardStats };

@@ -1,30 +1,28 @@
 import { useState, useEffect, useContext } from "react";
-import { User, Heart, ChevronDown } from "lucide-react";
+import { User, Heart, ChevronDown, LogOut, Sparkles, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { appContext } from "../context/AppContext";
 import toast from "react-hot-toast";
+
 export default function HealthHubNavbar() {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const navigate = useNavigate();
-  const { token, setToken, setUserData, setRole, userData } =
-    useContext(appContext);
+  const { token, setToken, setUserData, setRole, userData, role } = useContext(appContext);
 
-  // Use token from context to determine login state
   const isLoggedIn = !!token;
+  const portalLabel = role === 'doctor' ? 'Doctor Suite' : role === 'admin' ? 'Admin Suite' : 'Patient Portal';
+  const portalHomePath = role === 'doctor' ? '/doctor' : role === 'admin' ? '/admin' : '/patient';
 
   const handleLogout = () => {
     setShowUserDropdown(false);
-    // Clear token from context
     setToken(null);
-    setUserData(false); // Clear user data from context
+    setUserData(false);
     setRole(false);
-    // Also remove from localStorage if you're syncing them
     localStorage.removeItem("token");
     toast.success("Logged out successfully");
-    navigate("/"); // Redirect to login page
+    navigate("/");
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showUserDropdown && !event.target.closest(".user-dropdown")) {
@@ -39,87 +37,95 @@ export default function HealthHubNavbar() {
   }, [showUserDropdown]);
 
   return (
-    <nav className="bg-white shadow-lg border-b border-gray-200">
-      <div className="max-w-10xl mx-auto  sm:px-6 ">
+    <nav className="bg-slate-950 text-white border-b border-white/10 shadow-xl sticky top-0 z-50 backdrop-blur-md bg-slate-950/90">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left Side - Logo/Title with Icon */}
-          <div className="flex items-center space-x-2">
-            <Heart className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-800">HealthHub</h1>
+          
+          {/* Left Side - Logo */}
+          <div 
+            className="flex items-center space-x-3 cursor-pointer group"
+            onClick={() => navigate(isLoggedIn ? portalHomePath : "/")}
+          >
+            <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 via-cyan-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+              <Activity className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-blue-200 bg-clip-text text-transparent">
+                HealthHub
+              </span>
+              <span className="block text-[10px] text-cyan-400 font-bold uppercase tracking-widest -mt-1">
+                {portalLabel}
+              </span>
+            </div>
           </div>
 
-
-          {/* Right Side - Auth Buttons or User Menu */}
+          {/* Right Side - Auth Buttons or User Dropdown */}
           <div className="flex items-center">
             {!isLoggedIn ? (
-              <div className="flex space-x-3">
+              <div className="flex items-center space-x-3">
                 <button
                   onClick={() => navigate("/login")}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border border-slate-700"
                 >
-                  Login
+                  Log In
                 </button>
                 <button
                   onClick={() => navigate("/signup")}
-                  className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-md shadow-blue-500/20"
                 >
-                  Sign Up
+                  Create Account
                 </button>
               </div>
             ) : (
               <div className="relative user-dropdown">
                 <button
                   onClick={() => setShowUserDropdown(!showUserDropdown)}
-                  className="flex items-center space-x-2 bg-white hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 border border-gray-200 shadow-sm"
+                  className="flex items-center space-x-3 bg-slate-900/80 hover:bg-slate-800 px-3.5 py-1.5 rounded-2xl border border-white/10 transition-all shadow-md"
                 >
-                  <div className="rounded-full">
-                    <img
-                      src={
-                        userData?.image ||
-                        "https://ik.imagekit.io/1cfpxrwuh/uploads/vecteezy_user-icon-in-trendy-flat-style-isolated-on-grey-background_5005788-1_WlaUa49y1.jpg?updatedAt=1750169081764"
-                      }
-                      alt="User Profile"
-                      className="h-9 w-9 rounded-full object-cover"
-                      style={{ imageRendering: "crisp-edges" }}
-                    />
+                  <img
+                    src={
+                      userData?.image ||
+                      "https://ik.imagekit.io/1cfpxrwuh/uploads/vecteezy_user-icon-in-trendy-flat-style-isolated-on-grey-background_5005788-1_WlaUa49y1.jpg?updatedAt=1750169081764"
+                    }
+                    alt={userData?.name || "User"}
+                    className="h-8 w-8 rounded-xl object-cover ring-2 ring-blue-500/30"
+                  />
+                  <div className="text-left hidden sm:block">
+                    <span className="block text-xs font-bold text-slate-100">
+                      {userData?.name || "User Account"}
+                    </span>
+                    <span className="block text-[10px] text-cyan-400 font-medium">
+                      {portalLabel}
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-800">
-                    {userData?.name}
-                  </span>
                   <ChevronDown
-                    className={`h-4 w-4 text-gray-600 transition-transform duration-200 ${
-                      showUserDropdown ? "rotate-180" : ""
+                    className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                      showUserDropdown ? "rotate-180 text-cyan-400" : ""
                     }`}
                   />
                 </button>
 
                 {/* Dropdown Menu */}
                 {showUserDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200">
+                  <div className="absolute right-0 mt-2 w-52 bg-slate-900 rounded-2xl shadow-2xl py-2 z-50 border border-white/10 backdrop-blur-xl">
+                    <div className="px-4 py-2 border-b border-white/10 sm:hidden">
+                      <p className="text-xs font-bold text-white">{userData?.name}</p>
+                      <p className="text-[10px] text-slate-400">{userData?.email}</p>
+                    </div>
+
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 flex items-center space-x-2"
+                      className="w-full text-left px-4 py-2.5 text-xs font-bold text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors flex items-center space-x-2"
                     >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        />
-                      </svg>
-                      <span>Logout</span>
+                      <LogOut className="h-4 w-4" />
+                      <span>Log Out of Account</span>
                     </button>
                   </div>
                 )}
               </div>
             )}
           </div>
+
         </div>
       </div>
     </nav>

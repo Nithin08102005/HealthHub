@@ -484,4 +484,46 @@ const sendDoctorCancellationNotificationFromPatient = async (
   
   await sendMail(doctorEmail, subject, text, html);
 };
-export { sendPatientRequest, sendDoctorNotification ,sendPatientCancellationConfirmation,sendDoctorCancellationNotification,sendDoctorCancellationNotificationFromPatient};
+
+const sendResetOTPEmail = async (email, name, otp) => {
+  const subject = `Password Reset OTP - HealthHub`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .header { text-align: center; border-bottom: 2px solid #eaeaea; padding-bottom: 20px; }
+        .header h1 { color: #2c5aa0; margin: 0; }
+        .content { padding: 20px 0; text-align: center; }
+        .otp { font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2c5aa0; margin: 20px 0; background: #f8f9fa; padding: 15px; border-radius: 6px; display: inline-block; }
+        .footer { text-align: center; color: #888888; font-size: 12px; border-top: 2px solid #eaeaea; padding-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>HealthHub</h1>
+          <p>Password Reset Request</p>
+        </div>
+        <div class="content">
+          <p>Hello ${name},</p>
+          <p>We received a request to reset your password. Use the verification code (OTP) below to proceed. This code is valid for 10 minutes.</p>
+          <div class="otp">${otp}</div>
+          <p>If you did not request this reset, please ignore this email.</p>
+        </div>
+        <div class="footer">
+          <p>This is an automated security message from HealthHub. Please do not reply.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  const text = `Hello ${name},\n\nYour password reset OTP is ${otp}. It is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.`;
+  await sendMail(email, subject, text, html);
+};
+
+export { sendPatientRequest, sendDoctorNotification ,sendPatientCancellationConfirmation,sendDoctorCancellationNotification,sendDoctorCancellationNotificationFromPatient, sendResetOTPEmail };
+

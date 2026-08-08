@@ -1,11 +1,26 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Calendar, Clock, MapPin, User, Phone, CheckCircle, XCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  User, 
+  Phone, 
+  CheckCircle, 
+  XCircle, 
+  Loader2, 
+  ChevronDown, 
+  ChevronUp, 
+  DollarSign, 
+  Sparkles, 
+  CheckCircle2, 
+  AlertCircle 
+} from 'lucide-react';
 import { appContext } from '../../context/AppContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-
 const calculateAge = dob => {
+  if (!dob) return null;
   const birthDate = new Date(dob);
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -23,7 +38,7 @@ const transformAppointment = raw => ({
   reasonForVisit: raw.reasonforvisit,
   status: raw.status,
   paymentStatus: raw.paymentstatus,
-  consultancyFee: 500, // Hardcoded as you didn't specify a source
+  consultancyFee: 500,
   patient: {
     name: raw.name,
     image: raw.image,
@@ -34,34 +49,28 @@ const transformAppointment = raw => ({
   }
 });
 
-// Helper function to check if appointment is currently active (should show complete button)
 const isAppointmentActive = (date, time) => {
   const now = new Date();
   const appointmentDate = new Date(date);
   const [hours, minutes] = time.split(':');
   
-  // Set appointment start time
   const appointmentStart = new Date(appointmentDate);
   appointmentStart.setHours(parseInt(hours), parseInt(minutes), 0, 0);
   
-  // Set appointment end time (1 hour later)
   const appointmentEnd = new Date(appointmentStart);
   appointmentEnd.setHours(appointmentEnd.getHours() + 1);
   
   return now >= appointmentStart && now <= appointmentEnd;
 };
 
-// Helper function to check if appointment should be auto-completed
 const shouldAutoComplete = (date, time) => {
   const now = new Date();
   const appointmentDate = new Date(date);
   const [hours, minutes] = time.split(':');
   
-  // Set appointment start time
   const appointmentStart = new Date(appointmentDate);
   appointmentStart.setHours(parseInt(hours), parseInt(minutes), 0, 0);
   
-  // Set appointment end time (1 hour later)
   const appointmentEnd = new Date(appointmentStart);
   appointmentEnd.setHours(appointmentEnd.getHours() + 1);
   
@@ -69,36 +78,29 @@ const shouldAutoComplete = (date, time) => {
 };
 
 const DoctorAppointments = () => {
-  const {userData: doctorData} = useContext(appContext);
+  const { userData: doctorData } = useContext(appContext);
   const [appointmentData, setAppointmentData] = useState({
     pending: [],
     confirmed: [],
     completed: [],
-    cancelled: []
+    cancelled: [],
+    expired: []
   });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedAppointment, setExpandedAppointment] = useState(null);
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [showCancelled, setShowCancelled] = useState(false);
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'confirmed' | 'completed' | 'cancelled'
   
-  // Auto-complete checker
   useEffect(() => {
     const checkAutoComplete = () => {
       let hasChanges = false;
       const updatedData = { ...appointmentData };
       
-      // Check confirmed appointments for auto-completion
       updatedData.confirmed = appointmentData.confirmed.filter(appointment => {
         if (shouldAutoComplete(appointment.date, appointment.time)) {
-          // Move to completed
-      
           hasChanges = true;
-          
-          // Auto-complete via API
           handleCompleteAppointment(appointment.id, true);
-          
-          return false; // Remove from confirmed
+          return false;
         }
         return true;
       });
@@ -108,10 +110,7 @@ const DoctorAppointments = () => {
       }
     };
     
-    // Check every minute
     const interval = setInterval(checkAutoComplete, 60000);
-    
-    // Check immediately
     checkAutoComplete();
     
     return () => clearInterval(interval);
@@ -121,24 +120,25 @@ const DoctorAppointments = () => {
     const fetchAppointments = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/getAppointments`,
-          {
-            doctorId: doctorData.id
-          }
-        );
+        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/getAppointments`, {
+          doctorId: doctorData.id
+        });
 
-        if (data.success === 'true') {
+        if (data.success === 'true' || data.success === true) {
           const grouped = {
             pending: [],
             confirmed: [],
             completed: [],
-            cancelled: []
+            cancelled: [],
+            expired: []
           };
 
           data.appointments.forEach(apt => {
             const transformed = transformAppointment(apt);
             const status = apt.status.toLowerCase();
-            if (grouped[status]) {
+            if (status === 'cancelled' || status === 'expired') {
+              grouped.cancelled.push(transformed);
+            } else if (grouped[status]) {
               grouped[status].push(transformed);
             }
           });
@@ -147,14 +147,15 @@ const DoctorAppointments = () => {
         }
       } catch (err) {
         console.error('Error fetching appointments:', err);
-      }
-      finally {
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchAppointments();
-  }, []);
+    if (doctorData?.id) {
+      fetchAppointments();
+    }
+  }, [doctorData?.id]);
 
   const handleConfirmAppointment = async (appointmentId) => {
     const confirmAction = window.confirm("Are you sure you want to confirm this appointment?");
@@ -163,30 +164,30 @@ const DoctorAppointments = () => {
     try {
       setActionLoading(true);
       
-      const {data} = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/confirmAppointment`, {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/confirmAppointment`, {
         id: appointmentId
-      })
+      });
+
       if (data.success) {
         const appointmentToMove = appointmentData.pending.find(apt => apt.id === appointmentId);
         if (appointmentToMove) {
           const updatedAppointment = { ...appointmentToMove, status: 'confirmed' };
           
-          setAppointmentData({
-            ...appointmentData,
-            pending: appointmentData.pending.filter(apt => apt.id !== appointmentId),
-            confirmed: [...appointmentData.confirmed, updatedAppointment]
-          });
+          setAppointmentData(prev => ({
+            ...prev,
+            pending: prev.pending.filter(apt => apt.id !== appointmentId),
+            confirmed: [...prev.confirmed, updatedAppointment]
+          }));
         }
         
-        toast.success("Appointment confirmed successfully");
-        setActionLoading(false);
-      }
-      else {
+        toast.success("Appointment confirmed successfully!");
+      } else {
         toast.error(data.message);
       }
     } catch (error) {
       console.error("Error confirming appointment:", error);
-      toast.error("Error confirming appointment. Please try again later");
+      toast.error("Error confirming appointment. Please try again later.");
+    } finally {
       setActionLoading(false);
     }
   };
@@ -200,7 +201,7 @@ const DoctorAppointments = () => {
     try {
       if (!isAutoComplete) setActionLoading(true);
       
-      const {data} = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/completeAppointment`, {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/completeAppointment`, {
         id: appointmentId
       });
       
@@ -217,7 +218,7 @@ const DoctorAppointments = () => {
         }
         
         if (!isAutoComplete) {
-          toast.success("Appointment marked as completed");
+          toast.success("Appointment marked as completed!");
         }
       } else {
         if (!isAutoComplete) {
@@ -227,7 +228,7 @@ const DoctorAppointments = () => {
     } catch (error) {
       console.error("Error completing appointment:", error);
       if (!isAutoComplete) {
-        toast.error("Error completing appointment. Please try again later");
+        toast.error("Error completing appointment. Please try again later.");
       }
     } finally {
       if (!isAutoComplete) setActionLoading(false);
@@ -244,15 +245,14 @@ const DoctorAppointments = () => {
     try {
       setActionLoading(true);
       
-      const {data} = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/cancelAppointment`,
-        {
-          id: appointment.id
-        }
-      )
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/cancelAppointment`, {
+        id: appointment.id
+      });
+
       if (data.success) {
         const cancelledAppointment = { ...appointment, status: 'cancelled' };
-        
         let updatedData = { ...appointmentData };
+
         if (appointment.status === 'pending') {
           updatedData.pending = appointmentData.pending.filter(apt => apt.id !== appointment.id);
         } else if (appointment.status === 'confirmed') {
@@ -262,15 +262,46 @@ const DoctorAppointments = () => {
         updatedData.cancelled = [...appointmentData.cancelled, cancelledAppointment];
         
         setAppointmentData(updatedData);
-        toast.success("Appointment cancelled successfully");
-        setActionLoading(false);
-      }
-      else {
+        toast.success("Appointment cancelled successfully!");
+      } else {
         toast.error(data.message);
       }
     } catch (error) {
       console.error("Error cancelling appointment:", error);
       toast.error("Failed to cancel appointment");
+    } fontally: {
+      setActionLoading(false);
+    }
+  };
+
+  const handleMarkPaid = async (appointmentId) => {
+    const confirmAction = window.confirm("Confirm that offline payment (Cash/UPI) was received for this appointment?");
+    if (!confirmAction) return;
+
+    try {
+      setActionLoading(true);
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/markPaid`, {
+        id: appointmentId
+      });
+
+      if (data.success) {
+        toast.success("Payment marked as received!");
+        setAppointmentData(prev => {
+          const updateList = list => list.map(apt => apt.id === appointmentId ? { ...apt, paymentStatus: true } : apt);
+          return {
+            pending: updateList(prev.pending),
+            confirmed: updateList(prev.confirmed),
+            completed: updateList(prev.completed),
+            cancelled: updateList(prev.cancelled)
+          };
+        });
+      } else {
+        toast.error(data.message || "Failed to update payment");
+      }
+    } catch (error) {
+      console.error("Error marking payment paid:", error);
+      toast.error("Failed to update payment status");
+    } finally {
       setActionLoading(false);
     }
   };
@@ -287,7 +318,6 @@ const DoctorAppointments = () => {
 
   const formatTime = (timeString) => {
     if (!timeString) return '';
-    
     const [hours, minutes] = timeString.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -295,327 +325,324 @@ const DoctorAppointments = () => {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
+  const getStatusBadge = (status) => {
+    switch (status.toLowerCase()) {
       case 'confirmed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-amber-950/80 text-amber-300 border border-amber-500/30';
       case 'completed':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-950/80 text-cyan-300 border border-blue-500/30';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-rose-950/80 text-rose-300 border border-rose-500/30';
+      case 'expired':
+        return 'bg-slate-800 text-slate-400 border border-white/10';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-slate-800 text-slate-300 border border-white/10';
     }
-  };
-
-  const LoadingSpinner = () => (
-    <div className="flex items-center justify-center py-8">
-      <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      <span className="ml-2 text-gray-600">Loading appointments...</span>
-    </div>
-  );
-
-  const AppointmentCard = ({ appointment, showActions = true, isCompleted = false, isCancelled = false }) => {
-    const isExpanded = expandedAppointment === appointment.id;
-    const isActive = appointment.status === 'confirmed' && isAppointmentActive(appointment.date, appointment.time);
-    
-    return (
-      <div className={`bg-white border border-gray-200 rounded-lg p-4 mb-3 ${isCancelled ? 'opacity-75' : ''} ${isActive ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4 flex-1">
-            {/* Patient Image */}
-            <img
-              src={appointment.patient.image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=200&fit=crop&crop=face'}
-              alt={appointment.patient.name}
-              className={`w-20 h-24 rounded-lg object-cover border-2 ${isCancelled ? 'border-gray-300 grayscale' : 'border-blue-100'}`}
-            />
-            
-            {/* Patient Info */}
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h3 className={`font-medium ${isCancelled ? 'text-gray-500' : 'text-gray-900'}`}>
-                    {appointment.patient.name}
-                  </h3>
-                  <p className={`text-sm ${isCancelled ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {appointment.patient.age && `Age: ${appointment.patient.age}`}
-                    {appointment.patient.gender && ` • ${appointment.patient.gender}`}
-                  </p>
-                </div>
-                <div className="flex flex-col items-end space-y-1">
-                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                    {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                  </div>
-                  {isActive && (
-                    <div className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 animate-pulse">
-                      Active Now
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className={`flex items-center text-sm ${isCancelled ? 'text-gray-400' : 'text-gray-600'}`}>
-                  <Calendar className="w-4 h-4 mr-1" />
-                  <span className="mr-3">{formatDate(appointment.date)}</span>
-                  <Clock className="w-4 h-4 mr-1" />
-                  <span>{formatTime(appointment.time)}</span>
-                </div>
-                <div className="flex flex-col items-end">
-                  
-                  {/* Payment Status - only show for confirmed appointments */}
-                  {appointment.status === 'confirmed' && !isCancelled && (
-                    <div className={`text-xs px-2 py-1 rounded-full mt-1 ${
-                      appointment.paymentStatus 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-orange-100 text-orange-800'
-                    }`}>
-                      {appointment.paymentStatus ? 'Paid' : 'Payment Pending'}
-                    </div>
-                  )}
-                  
-                  {/* Action Buttons */}
-                  {showActions && !isCompleted && !isCancelled && (
-                    <div className="flex space-x-2 mt-2">
-                      {appointment.status === 'pending' && (
-                        <button
-                          onClick={() => handleConfirmAppointment(appointment.id)}
-                          disabled={actionLoading}
-                          className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors disabled:opacity-50"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Confirm</span>
-                        </button>
-                      )}
-                      
-                      {/* Mark as Complete button - only show during appointment time */}
-                      {appointment.status === 'confirmed' && isActive && (
-                        <button
-                          onClick={() => handleCompleteAppointment(appointment.id)}
-                          disabled={actionLoading}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors disabled:opacity-50"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Mark Complete</span>
-                        </button>
-                      )}
-                      
-                      <button
-                        onClick={() => handleCancelAppointment(appointment)}
-                        disabled={actionLoading}
-                        className="bg-red-50 hover:bg-red-100 text-red-600 text-sm px-4 py-2 rounded-lg border border-red-200 flex items-center space-x-2 transition-colors disabled:opacity-50"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        <span>Cancel</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Show details directly for completed and cancelled appointments */}
-              {(isCompleted || isCancelled) && (
-                <div className="mt-3 space-y-2 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Reason for Visit: </span>
-                    <span className={isCancelled ? 'text-gray-400' : 'text-gray-600'}>
-                      {appointment.reasonForVisit}
-                    </span>
-                  </div>
-                  {appointment.patient.phone && (
-                    <div className="flex items-center space-x-2">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span className={isCancelled ? 'text-gray-400' : 'text-gray-600'}>
-                        {appointment.patient.phone}
-                      </span>
-                    </div>
-                  )}
-                  {appointment.patient.email && (
-                    <div className="flex items-center space-x-2">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <span className={isCancelled ? 'text-gray-400' : 'text-gray-600'}>
-                        {appointment.patient.email}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Dropdown button for active appointments */}
-          {showActions && !isCompleted && !isCancelled && (
-            <button
-              onClick={() => setExpandedAppointment(isExpanded ? null : appointment.id)}
-              className="ml-4 p-2 hover:bg-gray-100 rounded-lg border border-gray-300 transition-colors"
-            >
-              {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-600" /> : <ChevronDown className="w-5 h-5 text-gray-600" />}
-            </button>
-          )}
-        </div>
-        
-        {/* Expandable content for active appointments */}
-        {isExpanded && showActions && !isCompleted && !isCancelled && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="font-medium text-gray-700">Reason for Visit: </span>
-                <span className="text-gray-600">{appointment.reasonForVisit}</span>
-              </div>
-              {appointment.patient.phone && (
-                <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">{appointment.patient.phone}</span>
-                </div>
-              )}
-              {appointment.patient.email && (
-                <div className="flex items-center space-x-2">
-                  <User className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">{appointment.patient.email}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-6 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">My Appointments</h1>
-            <p className="text-gray-600">Manage patient appointments and consultations</p>
-          </div>
-          <LoadingSpinner />
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-300 font-medium">Fetching patient appointments...</p>
         </div>
       </div>
     );
   }
 
+  const currentTabList = activeTab === 'pending' 
+    ? appointmentData.pending 
+    : activeTab === 'confirmed' 
+    ? appointmentData.confirmed 
+    : activeTab === 'completed' 
+    ? appointmentData.completed 
+    : appointmentData.cancelled;
+
   return (
-    <div className="min-h-screen bg-gray-50 py-6 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">My Appointments</h1>
-          <p className="text-gray-600">Manage patient appointments and consultations</p>
+    <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl my-2 p-6 sm:p-10">
+      {/* Background Gradients */}
+      <div className="absolute top-0 left-10 w-96 h-96 bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-500/15 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div className="max-w-6xl mx-auto relative z-10">
+
+        {/* Page Title Header */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Doctor Practice Suite</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              Patient Consultations
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">
+              Review pending requests, manage active consultations, and confirm offline cash payments.
+            </p>
+          </div>
         </div>
 
-        {/* Pending Appointments */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Pending Appointments</h2>
-            <span className="bg-yellow-100 text-yellow-800 text-sm px-2 py-1 rounded-full">
-              {appointmentData.pending.length} pending
+        {/* Tab Navigation Switcher Bar */}
+        <div className="bg-slate-900/90 backdrop-blur-2xl p-1.5 rounded-2xl flex flex-wrap sm:flex-nowrap items-center mb-8 gap-1 border border-white/15">
+          
+          {/* Pending */}
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'pending'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>Pending Action</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+              activeTab === 'pending' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
+            }`}>
+              {appointmentData.pending.length}
             </span>
-          </div>
-          
-          <div className="space-y-0">
-            {appointmentData.pending.length > 0 ? (
-              appointmentData.pending.map((appointment) => (
-                <AppointmentCard key={appointment.id} appointment={appointment} />
-              ))
-            ) : (
-              <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No pending appointments</p>
-              </div>
-            )}
-          </div>
-        </div>
+          </button>
 
-        {/* Confirmed Appointments */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Confirmed Appointments</h2>
-            <span className="bg-green-100 text-green-800 text-sm px-2 py-1 rounded-full">
-              {appointmentData.confirmed.length} confirmed
+          {/* Confirmed */}
+          <button
+            onClick={() => setActiveTab('confirmed')}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'confirmed'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>Confirmed</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+              activeTab === 'confirmed' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
+            }`}>
+              {appointmentData.confirmed.length}
             </span>
-          </div>
-          
-          <div className="space-y-0">
-            {appointmentData.confirmed.length > 0 ? (
-              appointmentData.confirmed.map((appointment) => (
-                <AppointmentCard key={appointment.id} appointment={appointment} />
-              ))
-            ) : (
-              <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-                <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No confirmed appointments</p>
-              </div>
-            )}
-          </div>
+          </button>
+
+          {/* Completed */}
+          <button
+            onClick={() => setActiveTab('completed')}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'completed'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>Completed</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+              activeTab === 'completed' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
+            }`}>
+              {appointmentData.completed.length}
+            </span>
+          </button>
+
+          {/* Cancelled & Expired */}
+          <button
+            onClick={() => setActiveTab('cancelled')}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'cancelled'
+                ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>Cancelled & Expired</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+              activeTab === 'cancelled' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
+            }`}>
+              {appointmentData.cancelled.length}
+            </span>
+          </button>
+
         </div>
 
-        {/* Completed Appointments */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Completed Appointments</h2>
-            <button
-              onClick={() => setShowCompleted(!showCompleted)}
-              className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg border transition-colors"
-            >
-              <span className="text-sm font-medium text-gray-700">{showCompleted ? 'Hide' : 'Show'} Completed</span>
-              {showCompleted ? <ChevronUp className="w-5 h-5 text-gray-600" /> : <ChevronDown className="w-5 h-5 text-gray-600" />}
-            </button>
-          </div>
-          
-          {showCompleted && (
-            <div className="space-y-0">
-              {appointmentData.completed.length > 0 ? (
-                appointmentData.completed.map((appointment) => (
-                  <AppointmentCard key={appointment.id} appointment={appointment} showActions={false} isCompleted={true} />
-                ))
-              ) : (
-                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No completed appointments</p>
+        {/* Appointments List */}
+        <div className="space-y-4 mb-16">
+          {currentTabList.length > 0 ? (
+            currentTabList.map((appointment) => {
+              const isExpanded = expandedAppointment === appointment.id;
+              const isCancelledOrExpired = appointment.status === 'cancelled' || appointment.status === 'expired';
+              const isActiveNow = appointment.status === 'confirmed' && isAppointmentActive(appointment.date, appointment.time);
+
+              return (
+                <div
+                  key={appointment.id}
+                  className={`bg-slate-900/90 rounded-3xl p-6 shadow-2xl border border-white/15 hover:border-emerald-400/40 transition-all duration-300 ${
+                    isCancelledOrExpired ? 'opacity-75' : ''
+                  } ${isActiveNow ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950' : ''}`}
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    
+                    {/* Patient Photo & Info */}
+                    <div className="flex items-center space-x-5 flex-1">
+                      <img
+                        src={appointment.patient.image || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=200&fit=crop'}
+                        alt={appointment.patient.name}
+                        className="w-20 h-24 rounded-2xl object-cover border border-white/15 flex-shrink-0 shadow-md bg-slate-950"
+                      />
+
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${getStatusBadge(appointment.status)}`}>
+                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                          </span>
+                          {isActiveNow && (
+                            <span className="bg-emerald-500/20 text-emerald-300 text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase animate-pulse border border-emerald-400/40">
+                              Active Now
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="text-lg font-extrabold text-white">
+                          {appointment.patient.name}
+                        </h3>
+
+                        <p className="text-xs text-slate-400">
+                          {appointment.patient.age && `Age: ${appointment.patient.age}`}
+                          {appointment.patient.gender && ` • Gender: ${appointment.patient.gender}`}
+                        </p>
+
+                        <div className="flex flex-wrap items-center text-xs text-slate-400 gap-4 pt-1">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{formatDate(appointment.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{formatTime(appointment.time)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Side: Payment & Action Buttons */}
+                    <div className="flex flex-col items-end justify-between w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-white/10 gap-3">
+                      
+                      {/* Payment Status & Mark Paid (Cash) */}
+                      {!isCancelledOrExpired && (
+                        <div className="flex items-center gap-2">
+                          <div className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                            appointment.paymentStatus 
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          }`}>
+                            {appointment.paymentStatus ? '✓ Paid' : '⏳ Payment Pending'}
+                          </div>
+
+                          {!appointment.paymentStatus && (appointment.status === 'confirmed' || appointment.status === 'completed') && (
+                            <button
+                              onClick={() => handleMarkPaid(appointment.id)}
+                              disabled={actionLoading}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-md shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
+                              title="Mark offline cash or UPI payment as received"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Mark Paid (Cash)</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Doctor Action Buttons */}
+                      {!isCancelledOrExpired && (
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                          
+                          {/* Confirm */}
+                          {appointment.status === 'pending' && (
+                            <button
+                              onClick={() => handleConfirmAppointment(appointment.id)}
+                              disabled={actionLoading}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Confirm Booking</span>
+                            </button>
+                          )}
+
+                          {/* Mark Complete */}
+                          {appointment.status === 'confirmed' && isActiveNow && (
+                            <button
+                              onClick={() => handleCompleteAppointment(appointment.id)}
+                              disabled={actionLoading}
+                              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Mark Complete</span>
+                            </button>
+                          )}
+
+                          {/* Cancel */}
+                          {appointment.status !== 'completed' && (
+                            <button
+                              onClick={() => handleCancelAppointment(appointment)}
+                              disabled={actionLoading}
+                              className="bg-rose-950/80 hover:bg-rose-900/80 text-rose-300 text-xs font-bold px-3 py-2 rounded-xl border border-rose-500/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              <span>Cancel</span>
+                            </button>
+                          )}
+
+                          {/* Dropdown Toggle */}
+                          <button
+                            onClick={() => setExpandedAppointment(isExpanded ? null : appointment.id)}
+                            className="p-2 text-slate-400 hover:bg-slate-800 rounded-xl border border-white/10 transition-colors cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+
+                  {/* Expandable Patient Details Box */}
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-white/10 space-y-2 text-xs text-slate-300 bg-slate-950/60 p-4 rounded-2xl border border-white/5">
+                      <div>
+                        <span className="font-bold text-white">Reason for Visit: </span>
+                        <span>{appointment.reasonForVisit || 'Routine Checkup'}</span>
+                      </div>
+                      {appointment.patient.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Phone: {appointment.patient.phone}</span>
+                        </div>
+                      )}
+                      {appointment.patient.email && (
+                        <div className="flex items-center gap-2">
+                          <User className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Email: {appointment.patient.email}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 </div>
-              )}
+              );
+            })
+          ) : (
+            <div className="bg-slate-900/90 rounded-3xl shadow-2xl border border-white/15 p-12 text-center">
+              <Calendar className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-white mb-1">
+                No {activeTab} appointments
+              </h3>
+              <p className="text-slate-400 text-xs">
+                {activeTab === 'pending'
+                  ? 'No patient appointment requests awaiting confirmation.'
+                  : activeTab === 'confirmed'
+                  ? 'No confirmed active patient appointments.'
+                  : activeTab === 'completed'
+                  ? 'Your completed consultation history will show up here.'
+                  : 'No cancelled or expired appointment records.'}
+              </p>
             </div>
           )}
         </div>
 
-        {/* Cancelled Appointments */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Cancelled Appointments</h2>
-            <div className="flex items-center space-x-3">
-              <span className="bg-red-100 text-red-800 text-sm px-2 py-1 rounded-full">
-                {appointmentData.cancelled.length} cancelled
-              </span>
-              <button
-                onClick={() => setShowCancelled(!showCancelled)}
-                className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg border transition-colors"
-              >
-                <span className="text-sm font-medium text-gray-700">
-                  {showCancelled ? 'Hide' : 'Show'} Cancelled
-                </span>
-                {showCancelled ? <ChevronUp className="w-5 h-5 text-gray-600" /> : <ChevronDown className="w-5 h-5 text-gray-600" />}
-              </button>
-            </div>
-          </div>
-          
-          {showCancelled && (
-            <div className="space-y-0">
-              {appointmentData.cancelled.length > 0 ? (
-                appointmentData.cancelled.map((appointment) => (
-                  <AppointmentCard key={appointment.id} appointment={appointment} showActions={false} isCancelled={true} />
-                ))
-              ) : (
-                <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-                  <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No cancelled appointments</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
