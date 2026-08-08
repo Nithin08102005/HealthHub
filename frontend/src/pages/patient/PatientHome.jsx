@@ -22,6 +22,7 @@ import {
 import axios from "axios";
 import { appContext } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
+import AISymptomChecker from "../../components/AISymptomChecker.jsx";
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const PatientDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   useEffect(() => {
     const getDashboardDetails = async () => {
@@ -256,6 +258,25 @@ const PatientDashboard = () => {
                     </div>
                     <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-300 group-hover:translate-x-1 transition-all" />
                   </button>
+
+                  <button
+                    onClick={() => setIsAIModalOpen(true)}
+                    className="w-full bg-gradient-to-r from-purple-900/40 to-indigo-900/40 hover:from-purple-800/60 hover:to-indigo-800/60 border border-purple-500/30 text-white rounded-2xl p-4 flex items-center justify-between group transition-all duration-300 cursor-pointer shadow-lg shadow-purple-950/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-300 border border-purple-500/30">
+                        <Sparkles className="w-5 h-5 animate-pulse" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold text-sm flex items-center gap-1">
+                          <span>AI Symptoms Helper</span>
+                          <span className="bg-purple-500/30 text-purple-200 text-[9px] px-1.5 py-0.5 rounded-full font-bold">New</span>
+                        </p>
+                        <p className="text-xs text-slate-400">Analyze symptoms using Gemini</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-purple-300 group-hover:translate-x-1 transition-all" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -402,6 +423,7 @@ const PatientDashboard = () => {
         </div>
 
       </div>
+      <AISymptomChecker isOpen={isAIModalOpen} onClose={() => setIsAIModalOpen(false)} />
     </div>
   );
 };

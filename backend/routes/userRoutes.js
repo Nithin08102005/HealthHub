@@ -7,6 +7,7 @@ import {
   forgotPassword,
   resetPassword,
 } from "../controllers/userController.js";
+import { aiSymptomCheck } from "../controllers/aiController.js";
 import authUser from "../middleware/authUser.js";
 import multer from "multer";
 const userRouter = express.Router();
@@ -15,6 +16,7 @@ userRouter.post("/register",upload.single("file"), userRegister);
 userRouter.post("/login", userLogin);
 userRouter.post("/forgot-password", forgotPassword);
 userRouter.post("/reset-password", resetPassword);
+userRouter.post("/ai-symptom-check", authUser, aiSymptomCheck);
 userRouter.get("/getUserDetails", authUser, getUserDetails);
 userRouter.post(
   "/updateUserDetails",
