@@ -52,45 +52,67 @@ async function userRegister(req, res) {
 
       res.json({ success: true, data: result[0], token });
     } else if (role === "doctor") {
-      const file = req.file;
+      const imageFile = req.files && req.files['image'] ? req.files['image'][0] : (req.files && req.files['file'] ? req.files['file'][0] : null);
+      const docFile = req.files && req.files['document'] ? req.files['document'][0] : null;
+
       let newFileId = null;
       let imageUrl = null;
-      if (file) {
-        try {
-          const filePath = file.path;
-          const fileBuffer = fs.readFileSync(filePath);
+      let documentUrl = null;
+      let documentFileId = null;
 
+      // Upload Profile Image
+      if (imageFile) {
+        try {
+          const fileBuffer = fs.readFileSync(imageFile.path);
           const uploadResponse = await imagekit.upload({
             file: fileBuffer,
-            fileName: file.originalname,
+            fileName: imageFile.originalname,
             folder: "/uploads",
-            tags: ["user-upload"],
+            tags: ["doctor-photo"],
             useUniqueFileName: true,
-            transformation: { pre: "q-80,f-auto" },
           });
-
-          // Clean up temporary file
-
           imageUrl = uploadResponse.url;
           newFileId = uploadResponse.fileId;
         } catch (uploadError) {
           console.error("Image upload error:", uploadError);
-          return res.json({
-            success: false,
-            message: "Failed to upload image: " + uploadError.message +" Please upload another image",
-          });
+          return res.json({ success: false, message: "Failed to upload profile image: " + uploadError.message });
         } finally {
-          if (file && file.path) {
-            fs.unlink(file.path, (err) => {
-              if (err) console.error("Error deleting temp file:", err);
+          if (imageFile.path) {
+            fs.unlink(imageFile.path, (err) => {
+              if (err) console.error("Error deleting temp image file:", err);
             });
           }
         }
       }
+
+      // Upload Document
+      if (docFile) {
+        try {
+          const fileBuffer = fs.readFileSync(docFile.path);
+          const uploadResponse = await imagekit.upload({
+            file: fileBuffer,
+            fileName: docFile.originalname,
+            folder: "/uploads/documents",
+            tags: ["doctor-license"],
+            useUniqueFileName: true,
+          });
+          documentUrl = uploadResponse.url;
+          documentFileId = uploadResponse.fileId;
+        } catch (uploadError) {
+          console.error("Document upload error:", uploadError);
+          return res.json({ success: false, message: "Failed to upload credential document: " + uploadError.message });
+        } finally {
+          if (docFile.path) {
+            fs.unlink(docFile.path, (err) => {
+              if (err) console.error("Error deleting temp document file:", err);
+            });
+          }
+        }
+      }
+
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-         const result =
-        await sql`INSERT INTO users (name, email, password,role,phone,gender) VALUES (${name}, ${email}, ${hashedPassword},${role},${phone},${gender}) RETURNING *`;
+      const result = await sql`INSERT INTO users (name, email, password,role,phone,gender) VALUES (${name}, ${email}, ${hashedPassword},${role},${phone},${gender}) RETURNING *`;
       const {
         specialization,
         qualification,
@@ -100,10 +122,11 @@ async function userRegister(req, res) {
         consultation_fee,
         is_available,
       } = req.body;
+
       if (newFileId) {
-        await sql`INSERT INTO doctors (user_id,email,name,phone,gender,specialization,qualification,address,about,experience_years,consultation_fee,is_available,image,file_id) VALUES (${result[0].id},${email},${name},${phone},${gender},${specialization},${qualification},${address},${about},${experience_years},${consultation_fee},${is_available},${imageUrl},${newFileId})`;
+        await sql`INSERT INTO doctors (user_id,email,name,phone,gender,specialization,qualification,address,about,experience_years,consultation_fee,is_available,image,file_id,status,document_url,document_file_id) VALUES (${result[0].id},${email},${name},${phone},${gender},${specialization},${qualification},${address},${about},${experience_years},${consultation_fee},${is_available},${imageUrl},${newFileId},'pending',${documentUrl},${documentFileId})`;
       } else {
-        await sql`INSERT INTO doctors (user_id,email,name,phone,gender,specialization,qualification,address,about,experience_years,consultation_fee,is_available) VALUES (${result[0].id},${email},${name},${phone},${gender},${specialization},${qualification},${address},${about},${experience_years},${consultation_fee},${is_available})`;
+        await sql`INSERT INTO doctors (user_id,email,name,phone,gender,specialization,qualification,address,about,experience_years,consultation_fee,is_available,status,document_url,document_file_id) VALUES (${result[0].id},${email},${name},${phone},${gender},${specialization},${qualification},${address},${about},${experience_years},${consultation_fee},${is_available},'pending',${documentUrl},${documentFileId})`;
       }
       res.json({success:true});
     }
@@ -137,6 +160,24 @@ async function userLogin(req, res) {
 
     if (!isMatch) {
       return res.json({ success: false, message: "Invalid credentials" });
+    }
+
+    if (user[0].role === "doctor") {
+      const doctorProfile = await sql`SELECT status FROM doctors WHERE user_id = ${user[0].id}`;
+      if (doctorProfile.length > 0) {
+        const status = doctorProfile[0].status;
+        if (status === "pending") {
+          return res.json({
+            success: false,
+            message: "Your application is currently pending review by our admin team. Please check back later."
+          });
+        } else if (status === "rejected") {
+          return res.json({
+            success: false,
+            message: "Your application to join the platform was rejected by the admin."
+          });
+        }
+      }
     }
 
     const token = jwt.sign(

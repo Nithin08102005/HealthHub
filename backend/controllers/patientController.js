@@ -34,7 +34,7 @@ export async function getDoctorById(req, res) {
 
 export async function bookAppointment(req, res) {
   try {
-    const { patientId, doctorId, selectedSlot, reasonForVisit } = req.body;
+    const { patientId, doctorId, selectedSlot, reasonForVisit, meetingType = 'offline' } = req.body;
     console.log(selectedSlot);
     const { date, time } = selectedSlot;
     const selectedDate = date;
@@ -73,8 +73,8 @@ export async function bookAppointment(req, res) {
     }
 
     const result = await sql`
-      INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, reason)
-      VALUES (${patientId}, ${doctorId}, ${dateStr}, ${time24}, ${reasonForVisit})
+      INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, reason, meeting_type)
+      VALUES (${patientId}, ${doctorId}, ${dateStr}, ${time24}, ${reasonForVisit}, ${meetingType})
       RETURNING *;
     `;
 
@@ -146,12 +146,15 @@ export async function getAppointments(req, res) {
     const appointments = await sql`
       SELECT 
         a.id AS appointment_id,
+        a.doctor_id,
         a.appointment_date,
         a.appointment_time,
         a.status,
         a.payment_status,
         a.reason,
+        a.meeting_type,
         d.name AS doctor_name,
+        d.user_id AS doctor_user_id,
         d.specialization,
         d.consultation_fee,
         d.address,

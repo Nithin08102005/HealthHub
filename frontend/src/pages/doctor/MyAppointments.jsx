@@ -13,11 +13,15 @@ import {
   DollarSign, 
   Sparkles, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
 import { appContext } from '../../context/AppContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import VideoRoom from '../../components/VideoRoom.jsx';
+import PrescriptionForm from '../../components/PrescriptionForm.jsx';
+import ChatDrawer from '../../components/ChatDrawer.jsx';
 
 const calculateAge = dob => {
   if (!dob) return null;
@@ -39,7 +43,10 @@ const transformAppointment = raw => ({
   status: raw.status,
   paymentStatus: raw.paymentstatus,
   consultancyFee: 500,
+  meetingType: raw.meeting_type,
   patient: {
+    id: raw.patient_id,
+    user_id: raw.patient_user_id,
     name: raw.name,
     image: raw.image,
     phone: raw.phone,
@@ -90,6 +97,9 @@ const DoctorAppointments = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedAppointment, setExpandedAppointment] = useState(null);
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'confirmed' | 'completed' | 'cancelled'
+  const [activeVideoCall, setActiveVideoCall] = useState(null);
+  const [activePrescriptionForm, setActivePrescriptionForm] = useState(null);
+  const [activeChat, setActiveChat] = useState(null);
   
   useEffect(() => {
     const checkAutoComplete = () => {
@@ -116,42 +126,42 @@ const DoctorAppointments = () => {
     return () => clearInterval(interval);
   }, [appointmentData.confirmed]);
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      setLoading(true);
-      try {
-        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/getAppointments`, {
-          doctorId: doctorData.id
+  const fetchAppointments = async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/doctor/getAppointments`, {
+        doctorId: doctorData.id
+      });
+
+      if (data.success === 'true' || data.success === true) {
+        const grouped = {
+          pending: [],
+          confirmed: [],
+          completed: [],
+          cancelled: [],
+          expired: []
+        };
+
+        data.appointments.forEach(apt => {
+          const transformed = transformAppointment(apt);
+          const status = apt.status.toLowerCase();
+          if (status === 'cancelled' || status === 'expired') {
+            grouped.cancelled.push(transformed);
+          } else if (grouped[status]) {
+            grouped[status].push(transformed);
+          }
         });
 
-        if (data.success === 'true' || data.success === true) {
-          const grouped = {
-            pending: [],
-            confirmed: [],
-            completed: [],
-            cancelled: [],
-            expired: []
-          };
-
-          data.appointments.forEach(apt => {
-            const transformed = transformAppointment(apt);
-            const status = apt.status.toLowerCase();
-            if (status === 'cancelled' || status === 'expired') {
-              grouped.cancelled.push(transformed);
-            } else if (grouped[status]) {
-              grouped[status].push(transformed);
-            }
-          });
-
-          setAppointmentData(grouped);
-        }
-      } catch (err) {
-        console.error('Error fetching appointments:', err);
-      } finally {
-        setLoading(false);
+        setAppointmentData(grouped);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (doctorData?.id) {
       fetchAppointments();
     }
@@ -561,10 +571,32 @@ const DoctorAppointments = () => {
                             </button>
                           )}
 
+                          {/* Video Room Join Button */}
+                          {appointment.status === 'confirmed' && appointment.meetingType === 'online' && (
+                            <button
+                              onClick={() => setActiveVideoCall(appointment.id.toString())}
+                              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-purple-500/25 transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Join Video Call</span>
+                            </button>
+                          )}
+
+                          {/* Chat Button */}
+                          {appointment.status === 'confirmed' && (
+                            <button
+                              onClick={() => setActiveChat(appointment)}
+                              className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                              <span>Chat</span>
+                            </button>
+                          )}
+
                           {/* Mark Complete */}
                           {appointment.status === 'confirmed' && isActiveNow && (
                             <button
-                              onClick={() => handleCompleteAppointment(appointment.id)}
+                              onClick={() => setActivePrescriptionForm(appointment.id.toString())}
                               disabled={actionLoading}
                               className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                             >
@@ -644,6 +676,43 @@ const DoctorAppointments = () => {
         </div>
 
       </div>
+
+      {activeVideoCall && (
+        <VideoRoom
+          channelName={`appointment_${activeVideoCall}`}
+          appointmentId={activeVideoCall}
+          senderId={doctorData.user_id}
+          receiverId={appointmentData.confirmed.find(apt => apt.id.toString() === activeVideoCall.toString())?.patient.user_id}
+          receiverName={appointmentData.confirmed.find(apt => apt.id.toString() === activeVideoCall.toString())?.patient.name}
+          onLeave={() => {
+            const finishedCallId = activeVideoCall;
+            setActiveVideoCall(null);
+            setActivePrescriptionForm(finishedCallId);
+          }}
+        />
+      )}
+
+      {activePrescriptionForm && (
+        <PrescriptionForm
+          appointmentId={activePrescriptionForm}
+          onClose={() => setActivePrescriptionForm(null)}
+          onSuccess={() => {
+            setActivePrescriptionForm(null);
+            fetchAppointments();
+          }}
+        />
+      )}
+
+      {activeChat && (
+        <ChatDrawer
+          isOpen={!!activeChat}
+          onClose={() => setActiveChat(null)}
+          appointmentId={activeChat.id}
+          senderId={doctorData.user_id}
+          receiverId={activeChat.patient.user_id}
+          receiverName={activeChat.patient.name}
+        />
+      )}
     </div>
   );
 };

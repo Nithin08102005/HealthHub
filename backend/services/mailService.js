@@ -525,5 +525,56 @@ const sendResetOTPEmail = async (email, name, otp) => {
   await sendMail(email, subject, text, html);
 };
 
-export { sendPatientRequest, sendDoctorNotification ,sendPatientCancellationConfirmation,sendDoctorCancellationNotification,sendDoctorCancellationNotificationFromPatient, sendResetOTPEmail };
+const sendPrescriptionEmail = async (patientEmail, patientName, doctorName, pdfBuffer, filename) => {
+  const subject = `Your HealthHub Prescription - Dr. ${doctorName}`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .header { text-align: center; border-bottom: 2px solid #eaeaea; padding-bottom: 20px; }
+        .header h1 { color: #0284c7; margin: 0; }
+        .footer { text-align: center; color: #888888; font-size: 12px; border-top: 2px solid #eaeaea; padding-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>HealthHub</h1>
+          <p>Prescription Uploaded</p>
+        </div>
+        <div class="content">
+          <p>Hello ${patientName},</p>
+          <p>Dr. ${doctorName} has completed your consultation and issued your digital prescription.</p>
+          <p>We have attached the prescription PDF to this email for your convenience. You can also view and download it anytime from the HealthHub Portal dashboard.</p>
+        </div>
+        <div class="footer">
+          <p>This is an automated message from HealthHub. Please do not reply.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  const text = `Hello ${patientName},\n\nDr. ${doctorName} has completed your consultation and issued your digital prescription. The prescription PDF is attached to this email. You can also download it from the portal.\n\nHealthHub Team`;
+
+  await transporter.sendMail({
+    from: '"HealthHub" <raonithin457@gmail.com>',
+    to: patientEmail,
+    subject,
+    text,
+    html,
+    attachments: [
+      {
+        filename,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      }
+    ]
+  });
+};
+
+export { sendPatientRequest, sendDoctorNotification ,sendPatientCancellationConfirmation,sendDoctorCancellationNotification,sendDoctorCancellationNotificationFromPatient, sendResetOTPEmail, sendPrescriptionEmail };
 

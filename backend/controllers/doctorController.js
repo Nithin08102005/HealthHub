@@ -8,12 +8,15 @@ export async function getAppointments(req, res) {
     const appointments = await sql`
       SELECT 
         a.id,
+        a.patient_id,
         a.appointment_date as date,
         a.appointment_time as time,
         a.status,
         a.payment_status as paymentStatus,
         a.reason as reasonForVisit,
+        a.meeting_type,
         p.name,
+        p.user_id AS patient_user_id,
         p.email,
         p.date_of_birth,
         p.gender,

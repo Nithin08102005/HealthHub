@@ -4,6 +4,7 @@ import AllPatients from "../pages/admin/AllPatients";
 import AllDoctors from "../pages/admin/AllDoctors";
 import ManageAppointments from "../pages/admin/ManageAppointments";
 import AddDoctor from "../pages/admin/AddDoctor";
+import DoctorRequests from "../pages/admin/DoctorRequests";
 function AdminRoutes() {
     return (
         <Routes>
@@ -11,6 +12,7 @@ function AdminRoutes() {
             <Route path="/patients" element={<AllPatients/>}/>
             <Route path="/doctors" element={<AllDoctors/>}/>
             <Route path="/appointments" element={<ManageAppointments/>} />
+            <Route path="/doctor-requests" element={<DoctorRequests/>}/>
             <Route path="/add-doctor" element={<AddDoctor/>}/>
 
         </Routes>

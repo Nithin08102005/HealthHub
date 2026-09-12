@@ -199,8 +199,15 @@ const SignUp = () => {
             />
           </div>
 
-          <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl text-xs text-emerald-300">
-            <strong>Note:</strong> Practitioner and administrator logins are granted by the portal administrator.
+          <div className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-2xl text-xs text-emerald-300 flex items-center justify-between">
+            <span>Are you a medical practitioner?</span>
+            <button
+              type="button"
+              onClick={() => navigate("/doctor-signup")}
+              className="text-emerald-400 hover:text-emerald-300 font-bold underline cursor-pointer"
+            >
+              Apply to join
+            </button>
           </div>
 
           <button

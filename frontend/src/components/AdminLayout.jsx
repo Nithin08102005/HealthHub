@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { appContext } from '../context/AppContext';
-import { LayoutDashboard, Users, Calendar, UserPlus, Sparkles, ChevronRight, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, UserPlus, Sparkles, ChevronRight, ShieldAlert, UserCheck } from 'lucide-react';
 
 function AdminLayout() {
   const location = useLocation();
@@ -11,6 +11,7 @@ function AdminLayout() {
     { path: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard },
     { path: '/admin/doctors', label: 'All Doctors', icon: Users },
     { path: '/admin/appointments', label: 'All Appointments', icon: Calendar },
+    { path: '/admin/doctor-requests', label: 'Doctor Requests', icon: UserCheck },
     { path: '/admin/add-doctor', label: 'Add Doctor', icon: UserPlus }
   ];
 

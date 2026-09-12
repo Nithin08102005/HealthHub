@@ -15,6 +15,7 @@ import AdminRoutes from './routes/AdminRoutes.jsx';
 import PatientLayout from './components/PatientLayout.jsx';
 import DoctorLayout from './components/DoctorLayout.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
+import DoctorSignUp from './pages/DoctorSignUp.jsx';
 import Footer from "./components/Footer.jsx"
 function App() {
 
@@ -34,6 +35,11 @@ function App() {
       <SignUp/>
       </RestrictedRoute>
       }/>
+      <Route path="/doctor-signup" element={
+       <RestrictedRoute>
+       <DoctorSignUp/>
+       </RestrictedRoute>
+       }/>
       <Route 
           path="/patient/*" 
           element={

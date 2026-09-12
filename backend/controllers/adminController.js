@@ -148,4 +148,58 @@ async function getDashboardStats(req, res) {
   }
 }
 
-export { getPatients, getDoctors, getAppointments, getDashboardStats };
+async function getPendingDoctors(req, res) {
+  try {
+    const result = await sql`
+      SELECT * FROM doctors 
+      WHERE status = 'pending' 
+      ORDER BY id DESC;
+    `;
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error("Error fetching pending doctors:", error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+async function approveDoctor(req, res) {
+  try {
+    const { doctorId } = req.body;
+    if (!doctorId) {
+      return res.json({ success: false, message: "Doctor ID is required" });
+    }
+
+    await sql`
+      UPDATE doctors 
+      SET status = 'approved' 
+      WHERE id = ${doctorId};
+    `;
+
+    res.json({ success: true, message: "Doctor approved successfully!" });
+  } catch (error) {
+    console.error("Error approving doctor:", error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+async function rejectDoctor(req, res) {
+  try {
+    const { doctorId } = req.body;
+    if (!doctorId) {
+      return res.json({ success: false, message: "Doctor ID is required" });
+    }
+
+    await sql`
+      UPDATE doctors 
+      SET status = 'rejected' 
+      WHERE id = ${doctorId};
+    `;
+
+    res.json({ success: true, message: "Doctor request rejected." });
+  } catch (error) {
+    console.error("Error rejecting doctor:", error);
+    res.json({ success: false, message: error.message });
+  }
+}
+
+export { getPatients, getDoctors, getAppointments, getDashboardStats, getPendingDoctors, approveDoctor, rejectDoctor };

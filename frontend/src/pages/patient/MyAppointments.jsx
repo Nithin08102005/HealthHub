@@ -14,16 +14,20 @@ import {
   AlertCircle,
   Stethoscope,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  FileText,
+  MessageSquare
 } from 'lucide-react';
 import axios from 'axios';
 import { appContext } from '../../context/AppContext';
 import toast from 'react-hot-toast';
+import VideoRoom from '../../components/VideoRoom.jsx';
+import ChatDrawer from '../../components/ChatDrawer.jsx';
 
 const key = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 const MyAppointments = () => {
-  const { userData } = useContext(appContext);
+  const { token, userData } = useContext(appContext);
   const [appointmentData, setAppointmentData] = useState({
     upcoming: [],
     past: [],
@@ -33,6 +37,8 @@ const MyAppointments = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [expandedAppointment, setExpandedAppointment] = useState(null);
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' | 'past' | 'cancelled'
+  const [activeVideoCall, setActiveVideoCall] = useState(null);
+  const [activeChat, setActiveChat] = useState(null);
 
   useEffect(() => {
     async function getAppointments() {
@@ -53,7 +59,10 @@ const MyAppointments = () => {
             status: appointment.status,
             payment_status: appointment.payment_status,
             consultancyFee: parseFloat(appointment.consultation_fee),
+            meetingType: appointment.meeting_type,
             doctor: {
+              id: appointment.doctor_id,
+              user_id: appointment.doctor_user_id,
               name: appointment.doctor_name,
               specialization: appointment.specialization,
               image: appointment.image,
@@ -195,6 +204,25 @@ const MyAppointments = () => {
       toast.error("Failed to cancel appointment. Please try again.");
     } finally {
       setCancelLoading(false);
+    }
+  };
+
+  const handleDownloadPrescription = async (appointmentId) => {
+    try {
+      const tokenVal = token || localStorage.getItem("token");
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/user/get-prescription`,
+        { appointmentId },
+        { headers: { token: tokenVal } }
+      );
+      if (response.data.success && response.data.data.pdf_url) {
+        window.open(response.data.data.pdf_url, "_blank");
+      } else {
+        toast.error("Prescription file not found or still generating.");
+      }
+    } catch (error) {
+      console.error("Error downloading prescription:", error);
+      toast.error("Failed to load prescription.");
     }
   };
 
@@ -467,6 +495,38 @@ const MyAppointments = () => {
                           </button>
                         )}
 
+                        {/* Video Room Join Button */}
+                        {appointment.status === 'confirmed' && appointment.meetingType === 'online' && (
+                          <button
+                            onClick={() => setActiveVideoCall(appointment.id.toString())}
+                            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-purple-500/25 transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Join Video Call</span>
+                          </button>
+                        )}
+                        
+                        {/* Chat Button */}
+                        {appointment.status === 'confirmed' && (
+                          <button
+                            onClick={() => setActiveChat(appointment)}
+                            className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Chat</span>
+                          </button>
+                        )}
+
+                         {/* Download Prescription Button */}
+                         {appointment.status === 'completed' && (
+                           <button
+                             onClick={() => handleDownloadPrescription(appointment.id)}
+                             className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer"
+                           >
+                             <FileText className="w-3.5 h-3.5" />
+                             <span>Download Prescription</span>
+                           </button>
+                         )}
                         {/* Cancel Appointment Button */}
                         {appointment.status === 'pending' && (
                           <button
@@ -528,6 +588,28 @@ const MyAppointments = () => {
         </div>
 
       </div>
+      
+      {activeVideoCall && (
+        <VideoRoom
+          channelName={`appointment_${activeVideoCall}`}
+          appointmentId={activeVideoCall}
+          senderId={userData.user_id}
+          receiverId={appointmentData.upcoming.find(apt => apt.id.toString() === activeVideoCall.toString())?.doctor.user_id}
+          receiverName={`Dr. ${appointmentData.upcoming.find(apt => apt.id.toString() === activeVideoCall.toString())?.doctor.name}`}
+          onLeave={() => setActiveVideoCall(null)}
+        />
+      )}
+
+      {activeChat && (
+        <ChatDrawer
+          isOpen={!!activeChat}
+          onClose={() => setActiveChat(null)}
+          appointmentId={activeChat.id}
+          senderId={userData.user_id}
+          receiverId={activeChat.doctor.user_id}
+          receiverName={`Dr. ${activeChat.doctor.name}`}
+        />
+      )}
     </div>
   );
 };

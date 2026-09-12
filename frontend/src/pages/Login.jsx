@@ -323,14 +323,23 @@ const Login = () => {
 
         {/* Footer Navigation */}
         {mode === 'login' && (
-          <div className="mt-8 pt-6 border-t border-white/10 text-center">
+          <div className="mt-8 pt-6 border-t border-white/10 text-center space-y-2">
             <p className="text-xs text-slate-400">
-              Don't have an account?{' '}
+              Don't have a patient account?{' '}
               <button
                 onClick={() => navigate('/signup')}
-                className="text-cyan-400 hover:text-cyan-300 font-bold ml-1 cursor-pointer"
+                className="text-cyan-400 hover:text-cyan-300 font-bold ml-1 cursor-pointer underline"
               >
-                Sign up as Patient
+                Sign up here
+              </button>
+            </p>
+            <p className="text-xs text-slate-400">
+              Are you a doctor looking to join?{' '}
+              <button
+                onClick={() => navigate('/doctor-signup')}
+                className="text-cyan-400 hover:text-cyan-300 font-bold ml-1 cursor-pointer underline"
+              >
+                Apply to register
               </button>
             </p>
           </div>

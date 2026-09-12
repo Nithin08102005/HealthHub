@@ -34,6 +34,7 @@ const BookAppointment = () => {
   const [reasonForVisit, setReasonForVisit] = useState("");
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingAppointment, setBookingAppointment] = useState(false);
+  const [meetingType, setMeetingType] = useState("offline");
 
   useEffect(() => {
     const fetchDoctorById = async () => {
@@ -198,9 +199,19 @@ const BookAppointment = () => {
     setBookingAppointment(true);
 
     try {
+      const dateStr = getLocalDateString(selectedSlot.date.date);
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/patient/bookAppointment`,
-        { doctorId, patientId: userData.id, selectedSlot, reasonForVisit },
+        { 
+          doctorId, 
+          patientId: userData.id, 
+          selectedSlot: {
+            date: { date: dateStr },
+            time: selectedSlot.time
+          }, 
+          reasonForVisit, 
+          meetingType 
+        },
         {
           headers: {
             token,
@@ -457,6 +468,57 @@ const BookAppointment = () => {
               className="w-full p-4 bg-slate-950/80 border border-white/15 rounded-2xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 resize-none h-32 transition-all placeholder-slate-500"
               required
             />
+          </div>
+
+          {/* Step 4: Consultation Type */}
+          <div className="pt-6 border-t border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-400">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">
+                  4. Consultation Type
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Choose how you would like to consult with the doctor.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <button
+                type="button"
+                onClick={() => setMeetingType("offline")}
+                className={`p-4 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer ${
+                  meetingType === "offline"
+                    ? "bg-gradient-to-br from-blue-600/20 to-cyan-500/20 border-cyan-400 text-white"
+                    : "bg-slate-950/80 border-white/10 text-slate-300 hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPin className="w-5 h-5 text-cyan-400" />
+                  <span className="font-bold text-sm">🏥 In-Clinic Visit</span>
+                </div>
+                <p className="text-xs text-slate-400">Meet the practitioner at their physical clinic address.</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMeetingType("online")}
+                className={`p-4 rounded-2xl border-2 text-left transition-all duration-200 cursor-pointer ${
+                  meetingType === "online"
+                    ? "bg-gradient-to-br from-purple-600/20 to-indigo-500/20 border-purple-400 text-white"
+                    : "bg-slate-950/80 border-white/10 text-slate-300 hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  <span className="font-bold text-sm">💻 Video Consultation</span>
+                </div>
+                <p className="text-xs text-slate-400">Join a secure virtual consultation call directly inside the app.</p>
+              </button>
+            </div>
           </div>
 
           {/* Summary & Confirm Action */}
